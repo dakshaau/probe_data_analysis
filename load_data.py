@@ -1,6 +1,14 @@
 import numpy as np
 import pickle
 import os
+# import time
+from datetime import datetime, timezone
+
+def loadTime(dir):
+	x,y = np.loadtxt(dir+'/Partition6467ProbePoints.csv', dtype=str, delimiter=',', usecols=(0,1), unpack=True)
+	y = np.array([datetime.strptime(y[i], "b'%m/%d/20%y %I:%M:%S %p'") for i in range(y.shape[0])])
+	return x,y
+
 
 def loadData(dir):
 	pTime = []
@@ -34,7 +42,10 @@ def loadData(dir):
 	return pTime, pLatLong, pAlt, pVelocity
 
 if __name__ == '__main__':
-	x,y = loadData('probe_data_map_matching')[:2]
+	# x,y = loadData('probe_data_map_matching')[:2]
 	# print(x.shape)
 	# print(y.shape)
-	print(x[1,1])
+	# print(x[1,1])
+	ID, date_time = loadTime('probe_data_map_matching')
+	t = date_time[10]
+	print(t.isoformat(' '))
