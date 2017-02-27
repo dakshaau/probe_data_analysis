@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 
 def loadTime(dir):
 	x,y = np.loadtxt(dir+'/Partition6467ProbePoints.csv', dtype=str, delimiter=',', usecols=(0,1), unpack=True)
+	x = np.array([fixString(x[i]) for i in range(x.shape[0])])
 	y = np.array([datetime.strptime(y[i], "b'%m/%d/20%y %I:%M:%S %p'") for i in range(y.shape[0])])
 	return x,y
 
@@ -15,19 +16,32 @@ def fixString(x):
 
 def loadLink(dir):
 	x,y,z,cat = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2,5), unpack=True)
+	dist = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=float, delimiter=',', usecols=(3,))
 	graph = defaultdict(lambda: [])
 	for i in range(y.shape[0]):
 		Y = fixString(y[i])
 		Z = fixString(z[i])
-		if cat[i] == "b'F'":
+		C = fixString(cat[i])
+		if C == 'F':
 			graph[Y].append(Z)
-		elif cat[i] == "b'T'":
+		elif C == 'T':
 			graph[Y].append(Z)
-		elif cat[i] == "b'B'":
+		elif C == 'B':
 			graph[Y].append(Z)
 			graph[Z].append(Y)
 		# graph[y[i]].append(z[i])
 	return graph
+
+def timeSlots(ids, date_time):
+	five_min = timedelta(minutes = 5)
+	uni_ids,ind,counts = np.unique(ids, return_index=True, return_counts=True)
+	times = defaultdict(lambda: [])
+	for i in range(uni_ids.shape[0]):
+		count = 0
+		while count < counts[i]:
+			times[uni_ids[i]].append(date_time[ind[i]+count])
+			count += 1
+	return times
 
 def loadData(dir):
 	pTime = []
@@ -66,7 +80,19 @@ if __name__ == '__main__':
 	# print(y.shape)
 	# print(x[1,1])
 
-	# ID, date_time = loadTime('probe_data_map_matching')
+	ID, date_time = loadTime('probe_data_map_matching')
+	# print(ID[:10])
+	times = timeSlots(ID, date_time)
+	# for i,x in enumerate(times.items()):
+	# 	if i==10:
+	# 		break
+	# 	k,v = x
+	# 	print('{}: {}'.format(k,v))
+	
+	k,v = list(times.items())[0]
+	x = v[-1]-v[0]
+	print(x)
+
 	# t = date_time[10]
 	# ten_min = timedelta(minutes=10)
 	# print(t.isoformat(' '))
@@ -74,11 +100,11 @@ if __name__ == '__main__':
 	# print(t.isoformat(' '))
 
 	graph = loadLink('probe_data_map_matching')
-	# for i,x in enumerate(graph.items()):
-	# 	if i==10:
-	# 		break
-	# 	k,v = x
-	# 	print('{}: {}'.format(k,v))
+	for i,x in enumerate(graph.items()):
+		if i==10:
+			break
+		k,v = x
+		print('{}: {}'.format(k,v))
 	print(len(graph))
 	# print(graph["162844982"])
 	# print(fixString("b'16244982'"))
