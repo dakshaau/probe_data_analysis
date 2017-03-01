@@ -22,6 +22,23 @@ def loadTime(dir):
 		y = pickle.load(open('probeTime.pckl','rb'))
 	return x,y
 
+def loadProbeSpeed(dir):
+	if os.path.exists('probeSpeed.pckl'):
+		speed = pickle.load(open('probeSpeed.pckl','rb'))
+		return speed
+	speed = np.loadtxt(dir+'/Partition6467ProbePoints.csv', delimiter=',', usecols=(6,))
+	speed = 0.621371 * speed
+	pickle.dump(speed, open('probeSpeed.pckl','wb'))
+	return speed
+
+def loadProbeHeading(dir):
+	if os.path.exists('probeHeading.pckl'):
+		heading = pickle.load(open('probeHeading.pckl','rb'))
+		return heading
+	heading = np.loadtxt(dir+'/Partition6467ProbePoints.csv', delimiter=',', usecols=(7,))
+	pickle.dump(heading, open('probeHeading.pckl','wb'))
+	return heading
+
 def loadProbeLatLong(dir):
 	x=y= None
 	if not os.path.exists('probeX.pckl') or not os.path.exists('probeY.pckl'):
