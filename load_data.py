@@ -104,17 +104,19 @@ def timeSlots(ids, date_time):
 		print('Sorted wrt time\n')
 		i = 0
 		proc=0.
+		# counter = 0
+		print('Making SLots')
 		while i < dt.shape[0]:
 			time = dt[i]
-			r = np.where((dt > time) & (dt <= (time+300)))
+			r = np.where((dt >= time) & (dt < (time+600)))
 			r = r[0]
 			if r.shape[0] > 1:
 				uni_ids, counts = np.unique(ids1[r], return_counts=True)
 				x = np.where(counts > 1)[0]
 				uni_ids = uni_ids[x].tolist()
 				for j in range(r.shape[0]):
-					if ids[r[j]] in uni_ids:
-						slots[time][ids[r[j]]].append(dt[r[j]])
+					if ids1[r[j]] in uni_ids:
+						slots[time][ids1[r[j]]].append(dt[r[j]])
 			if r.shape[0] > 0:
 				i += r.shape[0]
 			else:
@@ -167,16 +169,24 @@ if __name__ == '__main__':
 	# print(y.shape)
 	# print(x[1,1])
 
-	# ID, date_time = loadTime('probe_data_map_matching')
+	ID, date_time = loadTime('probe_data_map_matching')
 	# # # print(ID[:10])
-	# print('Loaded Data')
-	# slots = timeSlots(ID, date_time)
+	print('Loaded Data: {} points'.format(ID.shape[0]))
+	# print(ID[:200])
+	# print()
+	# print(date_time[:200])
+	slots = timeSlots(ID, date_time)
+
 	# # slots = json.load(open('slots.pckl','r'))
-	# for i,x in enumerate(slots.items()):
-	# 	if i==5:
-	# 		break
-	# 	k,v = x
-	# 	print('{}: {}'.format(k,v))
+	count = 0
+	for i,x in enumerate(slots.items()):
+		# if i==5:
+		# 	break
+		k,v = x
+		# print('{}: {}\n'.format(k,v))
+		for y in v:
+			count += len(v[y])
+	print(count)
 
 	# json.dump(slots,open('slots.pckl','w'))
 
@@ -209,13 +219,13 @@ if __name__ == '__main__':
 	# plt.ylabel('Longitude')
 	# plt.show()
 
-	IDx, IDy = loadLinkLatLong('probe_data_map_matching')
-	for j,i in enumerate(IDx):
-		# if j==3:
-		# 	break
-		# k,v = i
-		# print('{}: {}'.format(k,v))
-		plt.plot(IDx[i],IDy[i],marker='o', linestyle='-', c='green', mfc='red',linewidth=2)
-	plt.xlabel('Latitude')
-	plt.ylabel('Longitude')
-	plt.show()
+	# IDx, IDy = loadLinkLatLong('probe_data_map_matching')
+	# for j,i in enumerate(IDx):
+	# 	# if j==3:
+	# 	# 	break
+	# 	# k,v = i
+	# 	# print('{}: {}'.format(k,v))
+	# 	plt.plot(IDx[i],IDy[i],marker='o', linestyle='-', c='green', mfc='red',linewidth=2)
+	# plt.xlabel('Latitude')
+	# plt.ylabel('Longitude')
+	# plt.show()
