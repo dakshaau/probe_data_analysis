@@ -64,38 +64,29 @@ def calculateHE(theta, heading):
 	HE[ind_great] = 360. - HE[ind_great]
 	return HE
 
-def createCandidate(P, l_x, l_y, p_speed, p_head):
-	candidates = []
-	PDs = []
-	# HEs = []
-	for id in l_x:
-		for i,c in enumerate(zip(l_x[id], l_y[id])):
-			if i == len(l_x[id])-1:
-				break
-			x1,y1 = c
-			x2 = l_x[id][i+1]
-			y2 = l_x[id][i+1]
-			pd = calculatePD((x1,y1), (x2,y2), P)
-			# PDs.append([id,x1,y1,pd])
-			he = calculateHE((x1,y1), (x2,y2), p_head)
-			PDs.append([id,x1,y1,he,pd])
-	PDs = np.asanyarray(PDs,)
-	sind = PDs.argsort(axis=0)
-	PDs = PDs[sind[:,4],:]
-	# print(PDs.dtype)
-	if p_speed < 7.:
-		candidates = PDs[:4,:3].tolist()
-	else:
-		arr = np.asarray(PDs[:,3],dtype = np.float32)
-		# print(arr.shape)
-		# print(arr.dtype)
-		ind = np.where(arr <= 45.0)
-		ind = ind[0]
-		PDs = PDs[ind,:]
-		candidates = PDs[:2,:3].tolist()
-	return candidates
+def createCandidate(P, l_id, P1, P2, p_speed, p_head, theta):
+	PDs = calculatePD(P1, P2, P)
+	HEs = calculateHE(theta, p_head)
+	sind = PDs.argsort()
+	PDs = PDs[sind]
+	HEs = HEs[sind]
+	IDs = l_id[sind]
+	p1 = P1[sind,:]
 
-def TTP(slot_data, l_x, l_y, p_speed, p_head):
+	if p_speed < 7:
+		return [(IDs[i], p1[i,0], p1[i,1]) for i in range(4)]
+	else:
+		ind = np.where(HEs <= 45)[0]
+		PDs = PDs[ind]
+		IDs = IDs[ind]
+		p1 = p1[ind,:]
+		# print(p1.shape)
+		if ind.shape[0] > 2:
+			return [(IDs[i], p1[i,0], p1[i,1]) for i in range(2)]
+		else:
+			return []
+
+def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 	p_x, p_y = slot_data
 	# print(p_x)
 	if p_x.shape[0] <2:
@@ -105,24 +96,27 @@ def TTP(slot_data, l_x, l_y, p_speed, p_head):
 	for i in range(p_x.shape[0]):
 		x = p_x[i]
 		y = p_y[i]
-		candidates[str(x)+','+str(y)] = createCandidate((x,y), l_x, l_y, p_speed[i], p_head[i])
+		candidates[str(x)+','+str(y)] = createCandidate((x,y), l_id, P1, P2, p_speed[i], p_head[i], theta)
 	return candidates
 
-def MapMatching(p_id, d_t, p_x, p_y, slots, l_x, l_y, p_speed, p_head):
+def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta):
 	x = None
 	# cand = defaultdict(lambda: {})
-	print('Creating Candidates ... ')
 	prog = 0.
-	print('Completed: {:.2f}'.format(prog),end=' ')
+	# print('Completed: {:.2f}'.format(prog),end=' ')
 	tot = len(slots)
 	
 	for j,k in enumerate(slots):
 		# print(slots[k])
 		cand = {}
-		for i in slots[k]:
+		# tot = len(slots[k])
+		# print('Completed : {:.2f}%'.format(prog),end=' ')
+		for y,i in enumerate(slots[k]):
 			ind = np.where((p_id == i) & ((d_t >= slots[k][i][0]) & (d_t <= slots[k][i][-1])))[0]
-			x = TTP((p_x[ind], p_y[ind]), l_x, l_y, p_speed[ind], p_head[ind])
+			x = TTP((p_x[ind], p_y[ind]), l_id, P1, P2, p_speed[ind], p_head[ind], theta)
 			cand[i] = x
+			# prog = (y/(float(tot)-1.)) * 100
+			# print('\rCompleted : {:.2f}%'.format(prog),end=' ')	
 		# break
 		prog = (j/(float(tot)-1.)) * 100
 		# print('Creating {}.json'.format(k)) 
@@ -136,22 +130,24 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_x, l_y, p_speed, p_head):
 
 class MMThread(threading.Thread):
 	slots = None
-	p_id=d_t=p_x=p_y=slots=l_x=l_y=p_speed=p_head= None
+	p_id=d_t=p_x=p_y=slots=l_id=P1=P2=p_speed=p_head=theta= None
 
-	def __init__(self, p_id, d_t, p_x, p_y, slots, l_x, l_y, p_speed, p_head):
+	def __init__(self, p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta):
 		threading.Thread.__init__(self)
 		self.slots = slots
 		self.p_id = p_id
 		self.d_t = d_t
 		self.p_x = p_x
 		self.p_y = p_y
-		self.l_x = l_x
-		self.l_y = l_y
+		self.P1 = P1
+		self.P2 = P2
 		self.p_speed = p_speed
 		self.p_head = p_head
+		self.l_id = l_id
+		self.theta = theta
 
 	def run(self):
-		MapMatching(self.p_id, self.d_t, self.p_x, self.p_y, self.slots, self.l_x, self.l_y, self.p_speed, self.p_head)
+		MapMatching(self.p_id, self.d_t, self.p_x, self.p_y, self.slots, self.l_id, self.P1, self. P2, self.p_speed, self.p_head, self.theta)
 
 if __name__ == '__main__':
 	dat = 'probe_data_map_matching'
@@ -175,7 +171,7 @@ if __name__ == '__main__':
 
 	theta = calculateTheta(P1,P2)
 
-	HE = calculateHE(theta, 45.)
+	# HE = calculateHE(theta, 45.)
 
 	# print(HE[:10])
 	
@@ -198,30 +194,30 @@ if __name__ == '__main__':
 	# print
 
 	# print(l_id[:10])
-	# MapMatching(p_id, d_t, p_x, p_y, slots, l_x, l_y, p_speed, p_head)
+	# MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta)
 
 	''' Threading: Creating 4 Threads '''
-	# x = len(slots)
-	# print('Total number of slots: {}'.format(x))
-	# part = int(x/4)
-	# t1 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_x, l_y, p_speed, p_head)
-	# t2 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_x, l_y, p_speed, p_head)
-	# t3 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_x, l_y, p_speed, p_head)
-	# t4 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_x, l_y, p_speed, p_head)
+	x = len(slots)
+	print('Total number of slots: {}'.format(x))
+	part = int(x/4)
+	t1 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta)
+	t2 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta)
+	t3 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta)
+	t4 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta)
 	
-	# t1.start()
-	# t2.start()
-	# t3.start()
-	# t4.start()
+	t1.start()
+	t2.start()
+	t3.start()
+	t4.start()
 
-	# t1.join()
-	# print('{} slots done ...'.format(x/4))
-	# t2.join()
-	# print('{} slots done ...'.format(2*x/4))
-	# t3.join()
-	# print('{} slots done ...'.format(3*x/4))
-	# t4.join()
-	# print('{} slots done ...'.format(x))
+	t1.join()
+	print('{} slots done ...'.format(x/4))
+	t2.join()
+	print('{} slots done ...'.format(2*x/4))
+	t3.join()
+	print('{} slots done ...'.format(3*x/4))
+	t4.join()
+	print('{} slots done ...'.format(x))
 
 	# print(p_speed[:10])
 	# print(p_head[:10])
