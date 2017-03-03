@@ -29,16 +29,19 @@ def calculateTheta(P1, P2):
 	return theta
 
 def calculatePD(P1, P2, P3):
-	x1, y1 = P1
-	x2, y2 = P2
+	# x1, y1 = P1
+	# x2, y2 = P2
 	x3, y3 = P3
 	ER = 3959.
-	p1 = np.array([x1,y1])
-	p2 = np.array([x2,y2])
+	# p1 = np.array([x1,y1])
+	# p2 = np.array([x2,y2])
 	p3 = np.array([x3,y3])
-	p1_p2 = np.sum(np.square(p2-p1))
-	_mu = np.sum((p3-p1)*(p2-p1))/p1_p2
-	p = p1 + _mu*(p2-p1)
+	p1_p2 = np.sum(np.square(P2-P1),axis=1)
+	x = np.sum((p3-P1)*(P2-P1),axis=1)
+	ind = np.where(p1_p2 != 0)[0]
+	_mu = np.zeros(p1_p2.shape,dtype=p1_p2.dtype)
+	_mu[ind] = x[ind]/p1_p2[ind]
+	p = P1 + np.vstack((_mu,_mu)).T*(P2-P1)
 	pi = np.pi
 	
 	R = p*(pi/180.)
@@ -47,7 +50,7 @@ def calculatePD(P1, P2, P3):
 	arcsin = lambda x: np.arcsin(x)
 	sin = lambda x: np.sin(x)
 	cos = lambda x: np.cos(x)
-	PD = ER * arcsin(np.sqrt( sin(ab[0]/2.)**2 + cos(R3[0])*cos(R[0])*(sin(ab[1]/2.))**2) )
+	PD = ER * arcsin(np.sqrt( sin(ab[:,0]/2.)**2 + cos(R3[0])*cos(R[:,0])*(sin(ab[:,1]/2.))**2) )
 	return PD
 
 def calculateHE(theta, heading):
@@ -60,31 +63,6 @@ def calculateHE(theta, heading):
 	ind_great = np.where(HE > 180)[0]
 	HE[ind_great] = 360. - HE[ind_great]
 	return HE
-
-# def calculateHE(P1, P2, heading):
-# 	arctan = lambda x: np.arctan(x)
-# 	pi = np.pi
-# 	delta = np.subtract(P2,P1)
-# 	# delta *= pi/180.
-# 	# print(delta)
-# 	theta = None
-# 	if delta[0] < 0 and delta[1] >= 0:
-# 		temp = -1.*pi/2.
-# 		if delta[0] != 0 :
-# 			temp = arctan(delta[1]/delta[0])
-# 		theta = (2.5*pi - temp) * 180/pi
-# 	else:
-# 		temp = pi/2.
-# 		if delta[0] == 0 and delta[1] < 0:
-# 			temp = -1*temp
-# 		if delta[0] != 0 :
-# 			temp = arctan(delta[1]/delta[0])
-# 		theta = (0.5*pi - temp) * 180/pi
-# 	HE = abs(heading - theta)
-# 	# print(theta, heading)
-# 	if HE > 180:
-# 		HE = 360 - HE
-# 	return HE
 
 def createCandidate(P, l_x, l_y, p_speed, p_head):
 	candidates = []
@@ -199,7 +177,12 @@ if __name__ == '__main__':
 
 	HE = calculateHE(theta, 45.)
 
-	print(HE[:10])
+	# print(HE[:10])
+	
+	# pd = calculatePD(P1, P2, (51.60, 8.90))
+
+	# print(pd[:10])
+
 	# x = np.isnan(theta)
 
 	# x = np.where(x)
