@@ -51,10 +51,11 @@ def loadProbeLatLong(dir):
 	return x,y
 
 def loadLinkLatLong(dir):
-	if os.path.exists('linkX.json') and os.path.exists('linkY.json'):
-		IDx = json.load(open('linkX.json','r'))
-		IDy = json.load(open('linkY.json','r'))
-		return IDx, IDy
+	if os.path.exists('linkX.pckl') and os.path.exists('linkY.pckl') and os.path.exists('linkID.pckl'):
+		ID = pickle.load(open('linkID.pckl','rb'))
+		X = pickle.load(open('linkX.pckl','rb'))
+		Y = pickle.load(open('linkY.pckl','rb'))
+		return ID, X, Y
 	ID,x = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,14,), unpack=True)
 	x = np.array([fixString(x[i]) for i in range(x.shape[0])])
 	ID = np.array([fixString(ID[i]) for i in range(ID.shape[0])])
@@ -69,9 +70,28 @@ def loadLinkLatLong(dir):
 			# TODO: Ignoring elvation for now
 			IDx[ID[i]].append(lat)
 			IDy[ID[i]].append(lng)
-	json.dump(IDx, open('linkX.json','w'))
-	json.dump(IDy, open('linkY.json','w'))
-	return IDx, IDy
+	del ID
+	ID, X, Y = getLinkXYArray(IDx, IDy)
+	# json.dump(IDx, open('linkX.json','w'))
+	# json.dump(IDy, open('linkY.json','w'))
+	pickle.dump(ID, open('linkID.pckl','wb'))
+	pickle.dump(X, open('linkX.pckl','wb'))
+	pickle.dump(Y, open('linkY.pckl','wb'))
+	return ID, X, Y
+
+def getLinkXYArray(X, Y):
+	IDs = []
+	Xs = []
+	Ys = []
+	for k in X:
+		for x,y in zip(X[k],Y[k]):
+			IDs.append(k)
+			Xs.append(x)
+			Ys.append(y)
+	IDs = np.asarray(IDs)
+	Xs = np.asarray(Xs, dtype=np.float64)
+	Ys = np.asarray(Ys, dtype=np.float64)
+	return IDs, Xs, Ys
 
 def fixString(x):
 	return x.split("'")[-2]
@@ -169,24 +189,24 @@ if __name__ == '__main__':
 	# print(y.shape)
 	# print(x[1,1])
 
-	ID, date_time = loadTime('probe_data_map_matching')
-	# # # print(ID[:10])
-	print('Loaded Data: {} points'.format(ID.shape[0]))
-	# print(ID[:200])
-	# print()
-	# print(date_time[:200])
-	slots = timeSlots(ID, date_time)
+	# ID, date_time = loadTime('probe_data_map_matching')
+	# # # # print(ID[:10])
+	# print('Loaded Data: {} points'.format(ID.shape[0]))
+	# # print(ID[:200])
+	# # print()
+	# # print(date_time[:200])
+	# slots = timeSlots(ID, date_time)
 
-	# # slots = json.load(open('slots.pckl','r'))
-	count = 0
-	for i,x in enumerate(slots.items()):
-		# if i==5:
-		# 	break
-		k,v = x
-		# print('{}: {}\n'.format(k,v))
-		for y in v:
-			count += len(v[y])
-	print(count)
+	# # # slots = json.load(open('slots.pckl','r'))
+	# count = 0
+	# for i,x in enumerate(slots.items()):
+	# 	# if i==5:
+	# 	# 	break
+	# 	k,v = x
+	# 	# print('{}: {}\n'.format(k,v))
+	# 	for y in v:
+	# 		count += len(v[y])
+	# print(count)
 
 	# json.dump(slots,open('slots.pckl','w'))
 
@@ -219,7 +239,7 @@ if __name__ == '__main__':
 	# plt.ylabel('Longitude')
 	# plt.show()
 
-	# IDx, IDy = loadLinkLatLong('probe_data_map_matching')
+	a, b, c = loadLinkLatLong('probe_data_map_matching')
 	# for j,i in enumerate(IDx):
 	# 	# if j==3:
 	# 	# 	break
