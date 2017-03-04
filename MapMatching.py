@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
 	''' Multiprocessing : Creating 4 Processes '''
 	x = len(slots)       ## This is just for dividing the data between multiple systems
-	part = int(x/3)
+	part = int(x/4)
 	slots = OrderedDict(list(slots.items())[:part])
 
 	x = len(slots)
