@@ -3,7 +3,8 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 from collections import defaultdict
-import threading
+# import threading
+from multiprocessing import Process
 
 def calculateTheta(P1, P2):
 	arctan = lambda x: np.arctan(x)
@@ -99,7 +100,7 @@ def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 		candidates[str(x)+','+str(y)] = createCandidate((x,y), l_id, P1, P2, p_speed[i], p_head[i], theta)
 	return candidates
 
-def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta):
+def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta, Pname = 'Main'):
 	x = None
 	# cand = defaultdict(lambda: {})
 	prog = 0.
@@ -108,6 +109,10 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 	
 	for j,k in enumerate(slots):
 		# print(slots[k])
+		if os.path.exists('slot_cand/{}.json'.format(k)):
+			prog = (j/(float(tot)-1.)) * 100
+			print('\rCompleted : {:.2f}%, Process: {}'.format(prog, Pname),end=' ')
+			continue
 		cand = {}
 		# tot = len(slots[k])
 		# print('Completed : {:.2f}%'.format(prog),end=' ')
@@ -120,7 +125,7 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 		# break
 		prog = (j/(float(tot)-1.)) * 100
 		# print('Creating {}.json'.format(k)) 
-		print('\rCompleted : {:.2f}%'.format(prog),end=' ')
+		print('\rCompleted : {:.2f}%, Process: {}'.format(prog, Pname),end=' ')
 		json.dump(cand,open('slot_cand/{}.json'.format(k),'w'))
 		del cand
 
@@ -128,26 +133,26 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 	# print(cand)
 	# print(x)
 
-class MMThread(threading.Thread):
-	slots = None
-	p_id=d_t=p_x=p_y=slots=l_id=P1=P2=p_speed=p_head=theta= None
+# class MMThread(threading.Thread):
+# 	slots = None
+# 	p_id=d_t=p_x=p_y=slots=l_id=P1=P2=p_speed=p_head=theta= None
 
-	def __init__(self, p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta):
-		threading.Thread.__init__(self)
-		self.slots = slots
-		self.p_id = p_id
-		self.d_t = d_t
-		self.p_x = p_x
-		self.p_y = p_y
-		self.P1 = P1
-		self.P2 = P2
-		self.p_speed = p_speed
-		self.p_head = p_head
-		self.l_id = l_id
-		self.theta = theta
+# 	def __init__(self, p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta):
+# 		threading.Thread.__init__(self)
+# 		self.slots = slots
+# 		self.p_id = p_id
+# 		self.d_t = d_t
+# 		self.p_x = p_x
+# 		self.p_y = p_y
+# 		self.P1 = P1
+# 		self.P2 = P2
+# 		self.p_speed = p_speed
+# 		self.p_head = p_head
+# 		self.l_id = l_id
+# 		self.theta = theta
 
-	def run(self):
-		MapMatching(self.p_id, self.d_t, self.p_x, self.p_y, self.slots, self.l_id, self.P1, self. P2, self.p_speed, self.p_head, self.theta)
+# 	def run(self):
+# 		MapMatching(self.p_id, self.d_t, self.p_x, self.p_y, self.slots, self.l_id, self.P1, self. P2, self.p_speed, self.p_head, self.theta)
 
 if __name__ == '__main__':
 	dat = 'probe_data_map_matching'
@@ -200,10 +205,10 @@ if __name__ == '__main__':
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
 	part = int(x/4)
-	t1 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta)
-	t2 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta)
-	t3 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta)
-	t4 = MMThread(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta)
+	t1 = Process(target = MapMatching, args= (p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
+	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
+	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
+	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
 	
 	t1.start()
 	t2.start()
