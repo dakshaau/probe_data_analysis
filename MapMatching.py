@@ -201,9 +201,10 @@ if __name__ == '__main__':
 	# print(l_id[:10])
 	# MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta)
 
-	''' Threading: Creating 4 Threads '''
-	x = len(slots)
-	slots = OrderedDict(list(slots.items())[:int(x/3)])
+	''' Multiprocessing : Creating 4 Processes '''
+	x = len(slots)       ## This is just for dividing the data between multiple systems
+	part = int(x/3)
+	slots = OrderedDict(list(slots.items())[:part])
 
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
