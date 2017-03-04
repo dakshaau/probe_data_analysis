@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import os
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import matplotlib.pyplot as plt
 # import time
 from datetime import datetime, timezone, timedelta
@@ -145,11 +145,12 @@ def timeSlots(ids, date_time):
 			print('\rCompleted: {:.2f}'.format(proc),end=' ')
 		print('\n')
 		# slots = dict(sorted(slots.items(),key=lambda x: x[0]))
+		slots = OrderedDict(dict(slots))
 		print('Creating JSON: "slots.json"')
 		json.dump(slots,open('slots.json','w'))
 	else:
 		print('Loading "slots.json" ...')
-		slots = json.load(open('slots.json','r'))
+		slots = json.load(open('slots.json','r'), object_pairs_hook=OrderedDict)
 	return slots
 
 def loadData(dir):
