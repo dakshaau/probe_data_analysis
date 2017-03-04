@@ -2,7 +2,7 @@ from load_data import *
 import numpy as np
 import os
 from datetime import datetime, timedelta
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 # import threading
 from multiprocessing import Process
 
@@ -203,9 +203,12 @@ if __name__ == '__main__':
 
 	''' Threading: Creating 4 Threads '''
 	x = len(slots)
+	slots = OrderedDict(list(slots.items())[:int(x/3)])
+
+	x = len(slots)
 	print('Total number of slots: {}'.format(x))
 	part = int(x/4)
-	t1 = Process(target = MapMatching, args= (p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
+	t1 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
 	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
 	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
 	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
