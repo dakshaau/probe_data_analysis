@@ -204,15 +204,15 @@ if __name__ == '__main__':
 	''' Multiprocessing : Creating 4 Processes '''
 	x = len(slots)       ## This is just for dividing the data between multiple systems
 	part = int(x/4)
-	slots = OrderedDict(list(slots.items())[:part])
+	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0])[:part])
 
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
 	part = int(x/4)
-	t1 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
-	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
-	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
-	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, dict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
+	t1 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
+	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
+	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
+	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
 	
 	t1.start()
 	t2.start()
