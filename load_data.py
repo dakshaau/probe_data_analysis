@@ -100,19 +100,25 @@ def loadLink(dir):
 	x,y,z,cat = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2,5), unpack=True)
 	dist = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=float, delimiter=',', usecols=(3,))
 	graph = defaultdict(lambda: [])
+	lengths = defaultdict(lambda: [])
 	for i in range(y.shape[0]):
 		Y = fixString(y[i])
 		Z = fixString(z[i])
 		C = fixString(cat[i])
 		if C == 'F':
 			graph[Y].append(Z)
+			lengths[Y].append((Z,dist[i]))
 		elif C == 'T':
-			graph[Y].append(Z)
+			graph[Z].append(Y)
+			lengths[Z].append((Y,dist[i]))
 		elif C == 'B':
 			graph[Y].append(Z)
+			lengths[Y].append((Z,dist[i]))
 			graph[Z].append(Y)
+			lengths[Z].append((Y,dist[i]))
 		# graph[y[i]].append(z[i])
-	return graph
+
+	return graph, lengths
 
 def timeSlots(ids, date_time):
 	slots = {}

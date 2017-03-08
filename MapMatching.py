@@ -162,6 +162,7 @@ if __name__ == '__main__':
 	l_id, l_x, l_y = loadLinkLatLong(dat)
 	p_speed = loadProbeSpeed(dat)
 	p_head = loadProbeHeading(dat)
+	linkGraph = loadLink(dat)[1]
 	
 
 	# l_id, l_x, l_y = getLinkXYArray(l_x, l_y)
@@ -204,13 +205,7 @@ if __name__ == '__main__':
 	''' Multiprocessing : Creating 4 Processes '''
 	x = len(slots)       ## This is just for dividing the data between multiple systems
 	part = int(x/4)
-	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0])[2*part:3*part])
-	x = len(slots)
-	part = int(x/3)
-	slots = OrderedDict(list(slots.items())[2*part:])
-	x = len(slots)
-	part = int(x/3)
-	slots = OrderedDict(list(slots.items())[:part])
+	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0])[:3*part])
 
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
@@ -226,13 +221,15 @@ if __name__ == '__main__':
 	t4.start()
 
 	t1.join()
-	print('{} slots done ...'.format(x/4))
+	# print('{} slots done ...'.format(x/4))
 	t2.join()
-	print('{} slots done ...'.format(2*x/4))
+	# print('{} slots done ...'.format(2*x/4))
 	t3.join()
-	print('{} slots done ...'.format(3*x/4))
+	# print('{} slots done ...'.format(3*x/4))
 	t4.join()
-	print('{} slots done ...'.format(x))
+	# print('{} slots done ...'.format(x))
+
+	
 
 	# print(p_speed[:10])
 	# print(p_head[:10])
