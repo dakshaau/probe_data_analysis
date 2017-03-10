@@ -96,7 +96,34 @@ def getLinkXYArray(X, Y):
 def fixString(x):
 	return x.split("'")[-2]
 
-def loadLink(dir):
+def loadLinkIdentifiers(dir):
+	ids, ref, nref = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2), unpack=True)
+	idref = defaultdict(lambda: [])
+	# idnref = defaultdict(lambda: [])
+	for i in range(ref.shape[0]):
+		x = fixString(ids[i])
+		y = fixString(ref[i])
+		z = fixString(nref[i])
+		idref[x].append((y,z))
+		# idnref[z].append(x)
+	return idref
+
+def loadLinkLength(dir):
+	if os.path.exists('lID.pckl') and os.path.exists('linkLengths.pckl'):
+		x = pickle.load(open('lID.pckl','rb'))
+		dist = pickle.load(open('linkLengths.pckl','rb'))
+		return x, dist
+	x = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,), unpack=True)
+	dist = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=float, delimiter=',', usecols=(3,))
+	x = np.array([fixString(x[i]) for i in range(x.shape[0])])
+	# for i in range(x.shape[0]):
+	# 	x[i] = fixString(x[i])
+	pickle.dump(x,open('lID.pckl','wb'))
+	pickle.dump(dist,open('linkLengths.pckl','wb'))
+	return x, dist	
+
+# 
+def loadLink(dir, ref, nref):
 	x,y,z,cat = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2,5), unpack=True)
 	dist = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=float, delimiter=',', usecols=(3,))
 	graph = defaultdict(lambda: [])
@@ -105,17 +132,46 @@ def loadLink(dir):
 		Y = fixString(y[i])
 		Z = fixString(z[i])
 		C = fixString(cat[i])
+		ID = fixString(x[i])
 		if C == 'F':
+			# Links = ref[Z]
+			# for l in Links:
+			# 	lengths[ID].append((l,dist[i]))
+			# Links = nref[Y]
+			# for l in Links:
+			# 	d = np.where(x == "b'{}'".format(ID))
+			# 	lengths[l].append((ID,dist[d]))
 			graph[Y].append(Z)
-			lengths[Y].append((Z,dist[i]))
+			lengths[Y].append((Z,dist[i],ID))
 		elif C == 'T':
+			# Links = ref[Y]
+			# for l in Links:
+			# 	lengths[ID].append((l,dist[i]))
+			# Links = nref[Z]
+			# for l in Links:
+			# 	d = np.where(x == "b'{}'".format(ID))
+			# 	lengths[l].append((ID,dist[d]))
 			graph[Z].append(Y)
-			lengths[Z].append((Y,dist[i]))
+			lengths[Z].append((Y,dist[i],ID))
 		elif C == 'B':
+			# Links = ref[Z]
+			# for l in Links:
+			# 	lengths[ID].append((l,dist[i]))
+			# Links = nref[Y]
+			# for l in Links:
+			# 	d = np.where(x == "b'{}'".format(ID))
+			# 	lengths[l].append((ID,dist[d]))
+			# Links = ref[Y]
+			# for l in Links:
+			# 	lengths[ID].append((l,dist[i]))
+			# Links = nref[Z]
+			# for l in Links:
+			# 	d = np.where(x == "b'{}'".format(ID))
+			# 	lengths[l].append((ID,dist[d]))
 			graph[Y].append(Z)
-			lengths[Y].append((Z,dist[i]))
+			lengths[Y].append((Z,dist[i],ID))
 			graph[Z].append(Y)
-			lengths[Z].append((Y,dist[i]))
+			lengths[Z].append((Y,dist[i],ID))
 		# graph[y[i]].append(z[i])
 
 	return graph, lengths
