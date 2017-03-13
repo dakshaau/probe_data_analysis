@@ -50,6 +50,57 @@ def loadProbeLatLong(dir):
 		y = pickle.load(open('probeY.pckl','rb'))
 	return x,y
 
+def loadLinkDOT(dir):
+	if os.path.exists('linkDOT.json'):
+		dot = json.load(open('linkDOT.json','r'))
+		return dot
+	ids, dot = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,5), unpack=True)
+	dot = [fixString(dot[i]) for i in range(dot.shape[0])]
+	ids = [fixString(ids[i]) for i in range(ids.shape[0])]
+	# dot = np.array(dot)
+	# D = {}
+	D = dict([(i,d) for i,d in zip(ids,dot)])
+	json.dump(D,open('linkDOT.json','w'))
+	return D
+
+def createP1P2(ids,l_x,l_y,dot):
+	if os.path.exists('linkP1.pckl') and os.path.exists('linkP2.pckl') and os.path.exists('linkP1P2ID.pckl'):
+		P1 = pickle.load(open('linkP1.pckl','rb'))
+		P2 = pickle.load(open('linkP2.pckl','rb'))
+		lid = pickle.load(open('linkP1P2ID.pckl','rb'))
+		return lid, P1, P2
+
+	P1 = []
+	l_id = []
+	uni, index, count = np.unique(ids, return_counts=True, return_index=True)
+	for i in range(uni.shape[0]):
+		ID = uni[i]
+		# ind = np.where(ids == ID)[0]
+		x = l_x[index[i]:index[i]+count[i]]
+		y = l_y[index[i]:index[i]+count[i]]
+		if dot[ID] == 'F':
+			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0])]
+		elif dot[ID] == 'T':
+			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0]-1,-1,-1)]
+		elif dot[ID] == 'B':
+			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0]-1,-1,-1)]
+			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0])]
+	l_id = np.asarray(l_id)
+	P1 = np.asarray(P1)
+	P2 = P1[1:]
+	l2 = l_id[1:]
+	P1 = P1[:-1]
+	l1 = l_id[:-1]
+
+	ind = np.where((l1 == l2) & ~((P1[:,0] == P2[:,0]) & (P1[:,1] == P2[:,1])))
+	P1 = P1[ind]
+	P2 = P2[ind]
+	l1 = l1[ind]
+	pickle.dump(P1,open('linkP1.pckl','wb'))
+	pickle.dump(P2,open('linkP2.pckl','wb'))
+	pickle.dump(l1,open('linkP1P2ID.pckl','wb'))
+	return l1, P1, P2
+
 def loadLinkLatLong(dir):
 	if os.path.exists('linkX.pckl') and os.path.exists('linkY.pckl') and os.path.exists('linkID.pckl'):
 		ID = pickle.load(open('linkID.pckl','rb'))
