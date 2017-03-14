@@ -102,8 +102,8 @@ def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 	# print(p_x)
 	# ER = 6371.
 	# dLat = (0.1/ER)*(180/np.pi)
-	dLat = 0.0001
-	dLong = 0.0001
+	dLat = 0.001
+	dLong = 0.001
 	if p_x.shape[0] <2:
 		# print('Not enough points ...')
 		return {}
@@ -250,8 +250,8 @@ if __name__ == '__main__':
 
 	''' Multiprocessing : Creating 4 Processes '''
 	x = len(slots)       ## This is just for dividing the data between multiple systems
-	part = int(x/4)
-	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0]))
+	part = int(x/3)
+	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0])[:part])
 
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
