@@ -250,8 +250,8 @@ if __name__ == '__main__':
 
 	''' Multiprocessing : Creating 4 Processes '''
 	x = len(slots)       ## This is just for dividing the data between multiple systems
-	part = int(x/3)
-	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0])[:part])
+	part = int(x/4)
+	slots = OrderedDict(sorted(list(slots.items()), key=lambda x: x[0]))
 
 	x = len(slots)
 	print('Total number of slots: {}'.format(x))
