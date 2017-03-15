@@ -174,7 +174,7 @@ def loadLinkLength(dir):
 	return x, dist	
 
 # 
-def loadLink(dir, ref, nref):
+def loadLink(dir):
 	x,y,z,cat = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2,5), unpack=True)
 	dist = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=float, delimiter=',', usecols=(3,))
 	graph = defaultdict(lambda: [])
