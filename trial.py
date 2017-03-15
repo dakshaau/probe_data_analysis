@@ -108,7 +108,8 @@ if __name__ == '__main__':
 	# 	# Y = l_y[np.where(lid == l_id[i])]
 	# 	plt.plot(X,Y,c='green',linestyle='-',linewidth=2,marker='o',mfc='red',markersize=2)
 	pvid = set()
-	fli = ['1199426401.0.json','1244811116.0.json','1244812317.0.json']
+	# fli = ['1199426401.0.json','1244811116.0.json','1244812317.0.json']
+	fli = ['1245061148.0.json']
 	for fl in fli:
 		slot = OrderedDict(json.load(open('slot_cand/{}'.format(fl),'r')))
 	# P = np.vstack((l_x,l_y))
