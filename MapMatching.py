@@ -102,8 +102,8 @@ def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 	# print(p_x)
 	# ER = 6371.
 	# dLat = (0.1/ER)*(180/np.pi)
-	dLat = 0.0001
-	dLong = 0.0001
+	dLat = 0.001
+	dLong = 0.001
 	if p_x.shape[0] <2:
 		# print('Not enough points ...')
 		return {}
