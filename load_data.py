@@ -130,6 +130,29 @@ def loadLinkLatLong(dir):
 	pickle.dump(Y, open('linkY.pckl','wb'))
 	return ID, X, Y
 
+def loadLinkSlope(dir):
+	if os.path.exists('linkSlopes.json'):
+		slope = json.load(open('linkSlopes.json','r'))
+		return slope
+	ids, slopeinfo = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,16), unpack=True)
+	ids = [fixString(ids[i]) for i in range(ids.shape[0])]
+	# ids = ids.tolist()
+	slopeinfo = [fixString(s) for s in slopeinfo]
+	# slopeinfo = ids.tolist()
+	print(len(ids),len(slopeinfo))
+	slopes = defaultdict(lambda: [])
+	# ID = []
+	for s,i in zip(slopeinfo,ids):
+		if s != '':
+			y = s.split('|')
+			for x in y:
+				# print(x)
+				t = float(x.split('/')[1])
+				slopes[i].append(t)
+				# ID.append(i)
+	json.dump(slopes, open('linkSlopes.json','w'))
+	return slopes
+
 def getLinkXYArray(X, Y):
 	IDs = []
 	Xs = []
@@ -145,7 +168,14 @@ def getLinkXYArray(X, Y):
 	return IDs, Xs, Ys
 
 def fixString(x):
-	return x.split("'")[-2]
+	res = ''
+	try:
+		res = x.split("'")[-2]
+	except Exception as e:
+		print('Exception ',x, x.split("'"))
+		raise e
+	finally:
+		return res
 
 def loadLinkIdentifiers(dir):
 	ids, ref, nref = np.loadtxt(dir+'/Partition6467LinkData.csv', dtype=str, delimiter=',', usecols=(0,1,2), unpack=True)
@@ -353,6 +383,14 @@ if __name__ == '__main__':
 	# plt.show()
 
 	a, b, c = loadLinkLatLong('probe_data_map_matching')
+	sl = loadLinkSlope('probe_data_map_matching')
+	for i,k in enumerate(sl):
+		if i == 2:
+			break
+		# print(k, a[0])
+		ind = np.where(a == k)[0]
+		print(len(sl[k]) == ind.shape[0])
+		print(sl[k])
 	# for j,i in enumerate(IDx):
 	# 	# if j==3:
 	# 	# 	break

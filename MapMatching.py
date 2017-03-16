@@ -97,6 +97,81 @@ def createCandidate(P, l_id, P1, P2, p_speed, p_head, theta):
 		else:
 			return []
 
+def generatePairs(p1, p2):
+	if len(p1) == 0 or len(p2) == 0:
+		return []
+	else:
+		pairs = []
+		for i in p1:
+			for j in p2:
+				pairs.append((i,j))
+		return pairs
+
+def isChild(node1, node2, graph, visited, result, level):
+	if not visited[node1]:
+		visited[node1] = True
+		children = graph[node1]
+		if level > 4:
+			result[node1] = False
+			return False
+		if len(children) == 0:
+			result[node1] = False
+			return False
+		if node2 in children:
+			result[node1] = True
+			return True
+		else:
+			for i in children:
+				if isChild(i,node2,graph,visited,result, level+1):
+					result[node1] = True
+					return True
+			result[node1] = False
+			return False
+	else:
+		return result[node1]
+
+def isConnected(id1, id2, graph, lids, dot):
+	if id1 == id2:
+		return True
+	else:
+		# print(lids[id1])
+		ref1, nref1 = lids[id1][0]
+		ref2, nref2 = lids[id2][0]
+		visited = defaultdict(lambda: False)
+		result = defaultdict(lambda: False)
+		if dot[id1] == 'F' and dot[id2] =='T':
+			return isChild(nref1, nref2, graph, visited, result, 0)
+		elif dot[id1] == 'T' and dot[id2] =='F':
+			return isChild(ref1, ref2, graph, visited, result, 0)			
+		elif dot[id1] == 'F' and dot[id2] == 'F':
+			return isChild(nref1, ref2, graph, visited, result, 0)
+		elif dot[id1] == 'T' and dot[id2] == 'T':
+			return isChild(ref1, nref2, graph, visited, result, 0)
+		elif dot[id1] == 'B' and dot[id2] != 'B':
+			if dot[id2] == 'T':
+				a = isChild(ref1, nref2, graph, visited, result, 0)
+				b = isChild(nref1, nref2, graph, visited, result, 0)
+				return a or b
+			elif dot[id2] == 'F':
+				a = isChild(ref1, ref2, graph, visited, result, 0)
+				b = isChild(nref1, ref2, graph, visited, result, 0)
+				return a or b
+		elif dot[id2] == 'B' and dot[id1] != 'B':
+			if dot[id1] == 'T':
+				a = isChild(ref1, ref2, graph, visited, result, 0)
+				b = isChild(ref1, nref2, graph, visited, result, 0)
+				return a or b
+			elif dot[id1] == 'F':
+				a = isChild(nref1, ref2, graph, visited, result, 0)
+				b = isChild(nref1, nref2, graph, visited, result, 0)
+				return a or b
+		elif dot[id2] == 'B' and dot[id1] == 'B':
+			a = isChild(ref1, nref2, graph, visited, result, 0)
+			b = isChild(nref1, ref2, graph, visited, result, 0)
+			c = isChild(nref1, nref2, graph, visited, result, 0)
+			d = isChild(ref1, ref2, graph, visited, result, 0)
+			return a or b or c or d
+
 def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 	p_x, p_y = slot_data
 	# print(p_x)
@@ -132,6 +207,52 @@ def TTP(slot_data, l_id, P1, P2, p_speed, p_head, theta):
 		candidates[str(x)+','+str(y)] = createCandidate((x,y), lid_f, p1_f, p2_f, p_speed[i], p_head[i], theta_f)
 	return candidates
 
+def generatePseudoRoutes(slot, slot_ID, graph, dot, lidref, p_id, times, d_t, p_x, p_y):
+	if os.path.exists('CandidateLinks/{}.json'.format(slot_ID)):
+		return json.load(open('CandidateLinks/{}.json'.format(slot_ID),'r'))
+	candidateSet = {}
+	for i,car in enumerate(slot):
+		# if i == 1:
+		# 	break
+		time = sorted(times[car])
+		ind = np.where((p_id == car) & ((d_t >= time[0]) & (d_t <= time[-1])))[0]
+		x = p_x[ind]
+		y = p_y[ind]
+		# print(car)
+		# print(datetime.fromtimestamp(slots[slot_ID][car][0]))
+		# print(datetime.fromtimestamp(slots[slot_ID][car][-1]))
+		coors = ['{},{}'.format(str(x[k]),str(y[k])) for k in range(x.shape[0])]
+		c = []
+		[c.append(k) for k in coors if k not in c]
+		del coors[:]
+		coors = c
+		pvid = []
+		indices = []
+		for index,c in enumerate(coors):
+			pvid.append([ID[0] for ID in slot[car][c]])
+			if len(slot[car][c]) > 0:
+				indices.append(index)
+		pvid = [pvid[ix] for ix in indices]
+		coors = [coors[ix] for ix in indices]
+		# print(len(coors))
+		# print(indices)
+		pvid1 = pvid[:-1]
+		pvid2 = pvid[1:]
+		routes = []
+		for p1, p2 in zip(pvid1, pvid2):
+			pairs = generatePairs(p1,p2)
+			before = len(pairs)
+			for a,b in pairs:
+				# print(a,b)
+				# print(isConnected(a,b,graph,lidref,dot))
+				if not isConnected(a,b,graph,lidref,dot):
+					pairs.remove((a,b))
+			# print(len(pairs) == before)
+			routes.append(pairs)
+		candidateSet[car] = (routes, coors)
+	# json.dump(candidateSet, open('CandidateLinks/{}'.format(slot_ID),'w'))
+	return candidateSet
+
 def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta, Pname = 'Main'):
 	x = None
 	# cand = defaultdict(lambda: {})
@@ -142,6 +263,7 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 	for j,k in enumerate(slots):
 		# print(slots[k])
 		if os.path.exists('slot_cand/{}.json'.format(k)):
+			
 			prog = (j/(float(tot)-1.)) * 100
 			print('\rCompleted : {:.2f}%, Process: {}'.format(prog, Pname),end=' ')
 			continue
@@ -158,13 +280,32 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 		prog = (j/(float(tot)-1.)) * 100
 		# print('Creating {}.json'.format(k)) 
 		print('\rCompleted : {:.2f}%, Process: {}'.format(prog, Pname),end=' ')
-		json.dump(cand,open('slot_cand/{}.json'.format(k),'w'))
 		del cand
 
 	# print()
 	# print(cand)
 	# print(x)
-
+def createCandidateDumps(p_id, d_t, p_x, p_y, slots, dot, graph, lidref):
+	# cand = defaultdict(lambda: {})
+	prog = 0.
+	# print('Completed: {:.2f}'.format(prog),end=' ')
+	tot = len(slots)
+	
+	for j,k in enumerate(slots):
+		# print(slots[k])
+		if not os.path.exists('CandidateLinks/{}.json'.format(k)):
+			
+			slot = json.load(open('slot_cand/{}.json'.format(k),'r'))
+			slot_ID = k
+			times = slots[slot_ID]
+			links = generatePseudoRoutes(slot, slot_ID, graph, dot, lidref, p_id, times, d_t, p_x, p_y)
+			json.dump(links, open('CandidateLinks/{}.json'.format(k),'w'))
+			del links
+			prog = (j/(float(tot)-1.)) * 100
+			print('\rCompleted : {:.2f}%'.format(prog),end=' ')
+		else:
+			prog = (j/(float(tot)-1.)) * 100
+			print('\rCompleted : {:.2f}%'.format(prog),end=' ')
 # class MMThread(threading.Thread):
 # 	slots = None
 # 	p_id=d_t=p_x=p_y=slots=l_id=P1=P2=p_speed=p_head=theta= None
@@ -185,6 +326,7 @@ def MapMatching(p_id, d_t, p_x, p_y, slots, l_id, P1, P2, p_speed, p_head, theta
 
 # 	def run(self):
 # 		MapMatching(self.p_id, self.d_t, self.p_x, self.p_y, self.slots, self.l_id, self.P1, self. P2, self.p_speed, self.p_head, self.theta)
+# global dot, lidref, graph
 
 if __name__ == '__main__':
 	dat = 'probe_data_map_matching'
@@ -195,9 +337,11 @@ if __name__ == '__main__':
 	p_speed = loadProbeSpeed(dat)
 	p_head = loadProbeHeading(dat)
 	# linkGraph = loadLink(dat)[1]
+	
 	dot = loadLinkDOT(dat)
 	l_id, P1, P2 = createP1P2(l_id, l_x, l_y, dot)
-
+	lidref = loadLinkIdentifiers(dat)
+	graph = loadLink(dat)[0]
 	# l_id, l_x, l_y = getLinkXYArray(l_x, l_y)
 
 	# l_id = l_id[:-1]
@@ -259,7 +403,7 @@ if __name__ == '__main__':
 	t1 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
 	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
 	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
-	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
+	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
 	
 	t1.start()
 	t2.start()
@@ -276,7 +420,10 @@ if __name__ == '__main__':
 	# print('{} slots done ...'.format(x))
 
 	
-
+	print()
+	print('Creating candidate link pair dumps ...')
+	createCandidateDumps(p_id, d_t, p_x, p_y, slots, dot, graph, lidref)
+	print()
 	# print(p_speed[:10])
 	# print(p_head[:10])
 	# for j,x3 in enumerate(p_x):
