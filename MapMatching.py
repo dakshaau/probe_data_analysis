@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict, OrderedDict
 # import threading
 from multiprocessing import Process
+from trial2 import createMapMatch
 
 def calculateTheta(P1, P2):
 	arctan = lambda x,y: np.arctan2(x,y)
@@ -336,12 +337,15 @@ if __name__ == '__main__':
 	l_id, l_x, l_y = loadLinkLatLong(dat)
 	p_speed = loadProbeSpeed(dat)
 	p_head = loadProbeHeading(dat)
+	p_alt = loadProbeAlt(dat)
+
 	# linkGraph = loadLink(dat)[1]
 	
 	dot = loadLinkDOT(dat)
-	l_id, P1, P2 = createP1P2(l_id, l_x, l_y, dot)
+	l_id, P1, P2, dots = createP1P2(l_id, l_x, l_y, dot)
 	lidref = loadLinkIdentifiers(dat)
 	graph = loadLink(dat)[0]
+	lslopes = loadLinkSlope(dat)
 	# l_id, l_x, l_y = getLinkXYArray(l_x, l_y)
 
 	# l_id = l_id[:-1]
@@ -403,7 +407,7 @@ if __name__ == '__main__':
 	t1 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[:part]), l_id, P1, P2, p_speed, p_head, theta, 'P1'))
 	t2 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[part : 2*part]), l_id, P1, P2, p_speed, p_head, theta, 'P2'))
 	t3 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[2*part : 3*part]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
-	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P3'))
+	t4 = Process(target = MapMatching, args=(p_id, d_t, p_x, p_y, OrderedDict(list(slots.items())[3*part:]), l_id, P1, P2, p_speed, p_head, theta, 'P4'))
 	
 	t1.start()
 	t2.start()
@@ -424,6 +428,10 @@ if __name__ == '__main__':
 	print('Creating candidate link pair dumps ...')
 	createCandidateDumps(p_id, d_t, p_x, p_y, slots, dot, graph, lidref)
 	print()
+
+	# fls = ['1245061148.0']
+	fls = list(slots.keys())
+	createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt, l_id, P1, P2, dots, theta, lslopes)
 	# print(p_speed[:10])
 	# print(p_head[:10])
 	# for j,x3 in enumerate(p_x):

@@ -39,6 +39,14 @@ def loadProbeHeading(dir):
 	pickle.dump(heading, open('probeHeading.pckl','wb'))
 	return heading
 
+def loadProbeAlt(dir):
+	if os.path.exists('probeAlt.pckl'):
+		heading = pickle.load(open('probeAlt.pckl','rb'))
+		return heading
+	heading = np.loadtxt(dir+'/Partition6467ProbePoints.csv', delimiter=',', usecols=(5,))
+	pickle.dump(heading, open('probeAlt.pckl','wb'))
+	return heading
+
 def loadProbeLatLong(dir):
 	x=y= None
 	if not os.path.exists('probeX.pckl') or not os.path.exists('probeY.pckl'):
@@ -64,14 +72,16 @@ def loadLinkDOT(dir):
 	return D
 
 def createP1P2(ids,l_x,l_y,dot):
-	if os.path.exists('linkP1.pckl') and os.path.exists('linkP2.pckl') and os.path.exists('linkP1P2ID.pckl'):
+	if os.path.exists('linkP1.pckl') and os.path.exists('linkP2.pckl') and os.path.exists('linkP1P2ID.pckl') and os.path.exists('linkP1P2DOT.pckl'):
 		P1 = pickle.load(open('linkP1.pckl','rb'))
 		P2 = pickle.load(open('linkP2.pckl','rb'))
 		lid = pickle.load(open('linkP1P2ID.pckl','rb'))
-		return lid, P1, P2
+		dots = pickle.load(open('linkP1P2DOT.pckl','rb'))
+		return lid, P1, P2, dots
 
 	P1 = []
 	l_id = []
+	dots = []
 	uni, index, count = np.unique(ids, return_counts=True, return_index=True)
 	for i in range(uni.shape[0]):
 		ID = uni[i]
@@ -79,27 +89,32 @@ def createP1P2(ids,l_x,l_y,dot):
 		x = l_x[index[i]:index[i]+count[i]]
 		y = l_y[index[i]:index[i]+count[i]]
 		if dot[ID] == 'F':
-			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0])]
+			[(P1.append([x[k], y[k]]), l_id.append(ID), dots.append('F')) for k in range(x.shape[0])]
 		elif dot[ID] == 'T':
-			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0]-1,-1,-1)]
+			[(P1.append([x[k], y[k]]), l_id.append(ID), dots.append('T')) for k in range(x.shape[0]-1,-1,-1)]
 		elif dot[ID] == 'B':
-			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0]-1,-1,-1)]
-			[(P1.append([x[k], y[k]]), l_id.append(ID)) for k in range(x.shape[0])]
+			[(P1.append([x[k], y[k]]), l_id.append(ID), dots.append('T')) for k in range(x.shape[0]-1,-1,-1)]
+			[(P1.append([x[k], y[k]]), l_id.append(ID), dots.append('F')) for k in range(x.shape[0])]
 	l_id = np.asarray(l_id)
 	P1 = np.asarray(P1)
+	dots = np.asarray(dots)
 	P2 = P1[1:]
 	l2 = l_id[1:]
 	P1 = P1[:-1]
 	l1 = l_id[:-1]
+	d1 = dots[1:]
+	d2 = dots[:-1]
 
 	ind = np.where((l1 == l2) & ~((P1[:,0] == P2[:,0]) & (P1[:,1] == P2[:,1])))
 	P1 = P1[ind]
 	P2 = P2[ind]
 	l1 = l1[ind]
+	dots = d1[ind]
 	pickle.dump(P1,open('linkP1.pckl','wb'))
 	pickle.dump(P2,open('linkP2.pckl','wb'))
 	pickle.dump(l1,open('linkP1P2ID.pckl','wb'))
-	return l1, P1, P2
+	pickle.dump(dots,open('linkP1P2DOT.pckl','wb'))
+	return l1, P1, P2, dots
 
 def loadLinkLatLong(dir):
 	if os.path.exists('linkX.pckl') and os.path.exists('linkY.pckl') and os.path.exists('linkID.pckl'):
@@ -147,8 +162,9 @@ def loadLinkSlope(dir):
 			y = s.split('|')
 			for x in y:
 				# print(x)
+				d = float(x.split('/')[0])
 				t = float(x.split('/')[1])
-				slopes[i].append(t)
+				slopes[i].append((d,t))
 				# ID.append(i)
 	json.dump(slopes, open('linkSlopes.json','w'))
 	return slopes
