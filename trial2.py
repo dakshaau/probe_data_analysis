@@ -237,6 +237,7 @@ def createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt,
 	tot = float(len(fls))
 	prog = 0.
 	for lx,fl in enumerate(fls):
+		print(fl)
 		slot = json.load(open('CandidateLinks/{}.json'.format(fl) ,'r'))
 		slot_ID = fl
 		timeslot = slots[slot_ID]
@@ -292,6 +293,9 @@ def createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt,
 				point_cand[coors[ix]] = list(set(point_cand[coors[ix]]))
 				point_cand[coors[ix+1]] = list(set(point_cand[coors[ix+1]]))
 			# print(len(point_cand) == len(coors))
+			print(car)
+			print(len(ne_he) == len(coors))
+			continue
 			for ix,k in enumerate(coors):
 				# if ix == 4:
 					# break
@@ -409,26 +413,73 @@ def createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt,
 	print()
 	print('\nCreated File: {}'.format(dat+'/MapMatchResult.csv'))
 
+def slopes(lslopes, dat):
+	plat, plong, pdref = np.loadtxt(dat+'/MapMatchResult.csv',delimiter=',',usecols=(2,3,9), unpack=True)
+	pvids = np.loadtxt(dat+'/MapMatchResult.csv',delimiter=',',dtype=str,usecols=(7,), unpack=True)
+	pvids = np.asarray([fixString(pvids[i]) for i in range(pvids.shape[0])])
+	# lid = np.array(list(lslopes.keys()))
+	err = {}
+	for lid in lslopes:
+		ind = np.where(pvids == lid)[0]
+		if ind.shape[0] == 0:
+			continue
+		pid = pvids[ind]
+		lat = plat[ind]
+		lon = plong[ind]
+		dref = pdref[ind]
+		sind = dref.argsort()
+		dref = dref[sind]
+		lat = lat[sind]
+		lon = lon[sind]
+		slopes = []
+		if len(lslopes[lid]) != 0:
+			for x in lslopes[lid]:
+				slopes.append(x[1])
+			avgsl_l = np.nanmean(slopes)
+			# print(avgsl_l)
+			P = P = np.vstack((lat,lon))
+			P = P.T
+			P1 = []
+			P2 = []
+			if P.shape[0] == 1:
+				continue
+			elif P.shape[0] > 1:
+				P1 = P[1:]
+				P2 = P[:-1]
+			p2p1 = P2-P1
+			# indnot0 = np.where(p2p1[:,0] != 0)[0]
+			# if indnot0.shape[0] == 0:
+			# 	continue
+			pslopes = np.arctan2(p2p1[:,1],p2p1[:,0])
+			avgsl_p = np.nanmean(pslopes)
+			err[lid] = abs(avgsl_p - avgsl_l)
+	avg_error = np.nanmean([i for k,i in err.items()])
+	return err, avg_error
+
 
 if __name__ == '__main__':
 	dat = 'probe_data_map_matching'
-	p_id, d_t = loadTime(dat)
-	p_head = loadProbeHeading(dat)
-	p_speed = loadProbeSpeed(dat)
-	p_alt = loadProbeAlt(dat)
-	slots = timeSlots(p_id, d_t)
-	p_x, p_y = loadProbeLatLong(dat)
-	l_id, l_x, l_y = loadLinkLatLong(dat)
-	dot = loadLinkDOT(dat)
-	l_id, P1, P2, dots = createP1P2(l_id, l_x, l_y, dot)
-	graph = loadLink(dat)[0]
-	lidref = loadLinkIdentifiers(dat)
-	theta = calculateTheta(P1, P2)
+	# p_id, d_t = loadTime(dat)
+	# p_head = loadProbeHeading(dat)
+	# p_speed = loadProbeSpeed(dat)
+	# p_alt = loadProbeAlt(dat)
+	# slots = timeSlots(p_id, d_t)
+	# p_x, p_y = loadProbeLatLong(dat)
+	# l_id, l_x, l_y = loadLinkLatLong(dat)
+	# dot = loadLinkDOT(dat)
+	# l_id, P1, P2, dots = createP1P2(l_id, l_x, l_y, dot)
+	# graph = loadLink(dat)[0]
+	# lidref = loadLinkIdentifiers(dat)
+	# theta = calculateTheta(P1, P2)
 	lslopes = loadLinkSlope(dat)
 
-	fls = ['1244899791.0']
-	createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt, l_id, P1, P2, dots, theta, lslopes)
-				# dots = []
+	# # fls = ['1258672393.0','1266104336.0']
+	# fls = sorted(list(slots.keys()))
+	# x = len(fls)
+	# part = int(x/10)
+	# fls = fls[5*part:6*part] + fls[9*part:]
+	# createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt, l_id, P1, P2, dots, theta, lslopes)
+	# 			# dots = []
 				# uni, ind, count = np.unique(lids, return_index = True, return_counts=True)
 				# for ix in range(lids.shape[0]):
 				# 	if dot[lids[ix]] != 'B':
@@ -454,3 +505,5 @@ if __name__ == '__main__':
 			# 			f.write('{}\n'.format(ID))
 			# pass
 			# plt.show()
+	err, avg_error = slopes(lslopes, dat)
+	print(avg_error)

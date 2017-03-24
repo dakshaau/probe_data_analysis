@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict, OrderedDict
 # import threading
 from multiprocessing import Process
-from trial2 import createMapMatch
+from trial2 import createMapMatch, slopes
 
 def calculateTheta(P1, P2):
 	arctan = lambda x,y: np.arctan2(x,y)
@@ -431,10 +431,14 @@ if __name__ == '__main__':
 
 	# fls = ['1245061148.0']
 	fls = sorted(list(slots.keys()))
-	x = len(fls)
-	part = int(x/10)
-	fls = fls[:part]
+	# x = len(fls)
+	# part = int(x/10)
+	# fls = fls[:part]
 	createMapMatch(dat, fls, slots, p_id, p_x, p_y, d_t, p_speed, p_head, p_alt, l_id, P1, P2, dots, theta, lslopes)
+	print('Calculating Slope ...')
+	err, avg_err = slopes(lslopes, dat)
+	print('Done')
+	print('Average slope error in Decimal Degrees: {:.4f}'.format(avg_err))
 	# print(p_speed[:10])
 	# print(p_head[:10])
 	# for j,x3 in enumerate(p_x):
